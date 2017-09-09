@@ -2,12 +2,10 @@ package freestyle.plugin.action
 
 import java.util.Properties
 
-import com.intellij.ide.IdeView
 import com.intellij.ide.actions.{CreateFileFromTemplateDialog, CreateTemplateInPackageAction}
 import com.intellij.ide.fileTemplates.{FileTemplate, FileTemplateManager, JavaTemplateUtil}
 import com.intellij.openapi.actionSystem._
-import com.intellij.openapi.fileTypes.FileType
-import com.intellij.openapi.fileTypes.ex.FileTypeManagerEx
+import com.intellij.openapi.module.{Module, ModuleType}
 import com.intellij.openapi.project.{DumbAware, Project}
 import com.intellij.openapi.ui.InputValidatorEx
 import com.intellij.openapi.util.IconLoader
@@ -17,15 +15,15 @@ import com.intellij.psi.codeStyle.CodeStyleManager
 import org.jetbrains.annotations.NonNls
 import org.jetbrains.jps.model.java.JavaModuleSourceRootTypes
 import org.jetbrains.plugins.scala.ScalaFileType
-import org.jetbrains.plugins.scala.lang.psi.api.ScalaFile
-import org.jetbrains.plugins.scala.lang.psi.api.toplevel.typedef.ScTypeDefinition
 import org.jetbrains.plugins.scala.lang.refactoring.util.ScalaNamesUtil
+import org.jetbrains.plugins.scala.project._
+import org.jetbrains.sbt.project.module.SbtModuleType
 
 /**
  * https://github.com/AdrianRaFo
  */
 class CreationAction
-    extends CreateTemplateInPackageAction[ScTypeDefinition](
+    extends CreateTemplateInPackageAction[PsiFile](
       "New Freestyle Algebra",
       "Creates new Freestyle Algebra",
       IconLoader.getIcon("/images/logo.png"),
@@ -39,13 +37,6 @@ class CreationAction
     builder.addKind("Algebra", null, "Freestyle Algebra")
     builder.addKind("Tagless", null, "Freestyle Tagless")
     builder.addKind("Module", null, "Freestyle Module")
-
-    for (template <- FileTemplateManager.getInstance(project).getAllTemplates) {
-      if (isScalaTemplate(template) && checkPackageExists(directory)) {
-        builder.addKind(template.getName, null, template.getName)
-      }
-    }
-
     builder.setTitle("Create New Freestyle Algebra")
     builder.setValidator(new InputValidatorEx {
       def getErrorText(inputString: String): String = {
@@ -63,23 +54,28 @@ class CreationAction
     })
   }
 
-  private def isScalaTemplate(template: FileTemplate): Boolean = {
-    val fileType: FileType =
-      FileTypeManagerEx.getInstanceEx.getFileTypeByExtension(template.getExtension)
-    fileType == ScalaFileType.INSTANCE
-  }
-
   def getActionName(directory: PsiDirectory, newName: String, templateName: String): String =
     "New Freestyle Algebra"
 
-  def getNavigationElement(createdElement: ScTypeDefinition): PsiElement =
-    createdElement.extendsBlock
+  def getNavigationElement(createdElement: PsiFile): PsiElement =
+    createdElement
 
-  def doCreate(directory: PsiDirectory, newName: String, templateName: String): ScTypeDefinition = {
-    createClassFromTemplate(directory, newName, templateName) match {
-      case scalaFile: ScalaFile =>
-        scalaFile.typeDefinitions.headOption.orNull
-    }
+  def doCreate(directory: PsiDirectory, newName: String, templateName: String): PsiFile = {
+    createClassFromTemplate(directory, newName, templateName)
+  }
+
+  override def isAvailable(dataContext: DataContext): Boolean =
+    super.isAvailable(dataContext) && isUnderSourceRoots(dataContext)
+
+  private def isUnderSourceRoots(dataContext: DataContext): Boolean = {
+    val module: Module = dataContext.getData(LangDataKeys.MODULE.getName).asInstanceOf[Module]
+      if (module == null) false
+      else
+        ModuleType.get(module) match {
+          case _: SbtModuleType => true
+          case _                => module.hasScala
+        }
+
   }
 
   private def createClassFromTemplate(
