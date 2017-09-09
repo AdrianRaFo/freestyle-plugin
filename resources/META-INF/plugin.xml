@@ -1,0 +1,36 @@
+<idea-plugin>
+  <id>com.intellij.freestyle</id>
+  <name>Freestyle</name>
+  <version>1.0</version>
+
+  <description><![CDATA[
+      Enter short description for your plugin here.<br>
+      <em>most HTML tags may be used</em>
+    ]]></description>
+
+  <change-notes><![CDATA[
+      Add change notes here.<br>
+      <em>most HTML tags may be used</em>
+    ]]>
+  </change-notes>
+
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
+  <idea-version since-build="145.0"/>
+
+  <depends>org.intellij.scala</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <internalFileTemplate name="Freestyle Algebra"/>
+    <internalFileTemplate name="Freestyle Module"/>
+    <internalFileTemplate name="Freestyle Tagless"/>
+
+  </extensions>
+
+  <actions>
+    <!-- Add your actions here -->
+    <action id="creation" class="freestyle.plugin.action.CreationAction" text="Freestyle"
+            description="templates of freestyle">
+      <add-to-group group-id="NewGroup" anchor="after" relative-to-action="Scala.NewClass"/>
+    </action>
+  </actions>
+</idea-plugin>
