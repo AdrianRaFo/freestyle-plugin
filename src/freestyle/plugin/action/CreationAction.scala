@@ -2,8 +2,12 @@ package freestyle.plugin.action
 
 import java.util.Properties
 
+import com.intellij.ide.IdeView
 import com.intellij.ide.actions.{CreateFileFromTemplateDialog, CreateTemplateInPackageAction}
 import com.intellij.ide.fileTemplates.{FileTemplate, FileTemplateManager, JavaTemplateUtil}
+import com.intellij.openapi.actionSystem._
+import com.intellij.openapi.fileTypes.FileType
+import com.intellij.openapi.fileTypes.ex.FileTypeManagerEx
 import com.intellij.openapi.project.{DumbAware, Project}
 import com.intellij.openapi.ui.InputValidatorEx
 import com.intellij.openapi.util.IconLoader
@@ -37,7 +41,7 @@ class CreationAction
     builder.addKind("Module", null, "Freestyle Module")
 
     for (template <- FileTemplateManager.getInstance(project).getAllTemplates) {
-      if (checkPackageExists(directory)) {
+      if (isScalaTemplate(template) && checkPackageExists(directory)) {
         builder.addKind(template.getName, null, template.getName)
       }
     }
@@ -58,6 +62,13 @@ class CreationAction
         !StringUtil.isEmptyOrSpaces(inputString) && getErrorText(inputString) == null
     })
   }
+
+  private def isScalaTemplate(template: FileTemplate): Boolean = {
+    val fileType: FileType =
+      FileTypeManagerEx.getInstanceEx.getFileTypeByExtension(template.getExtension)
+    fileType == ScalaFileType.INSTANCE
+  }
+
   def getActionName(directory: PsiDirectory, newName: String, templateName: String): String =
     "New Freestyle Algebra"
 
@@ -78,6 +89,8 @@ class CreationAction
       parameters: String*): PsiFile =
     CreationAction.createFromTemplate(directory, className, templateName, parameters: _*)
 
+  def checkPackageExists(directory: PsiDirectory): Boolean =
+    JavaDirectoryService.getInstance.getPackage(directory) != null
 }
 
 object CreationAction {
