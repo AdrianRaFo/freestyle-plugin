@@ -1,4 +1,4 @@
-# freestyle-idea-plugin
+# Freestyle-plugin
 
 A simple plugin to create Freestyle templates
 
